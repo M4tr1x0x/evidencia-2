@@ -1,7 +1,7 @@
-# Evidencia 2 - Desarrollo de Aplicación Web
+# Evidencia 3 - Desarrollo de Aplicación Web
 
 ## Descripción
-Este proyecto es una aplicación web desarrollada con Laravel 8. Permite gestionar órdenes y usuarios mediante CRUD, incluyendo búsqueda por número de factura y manejo de roles para los usuarios.
+Este proyecto es una aplicación web desarrollada con Laravel 8 que automatiza procesos internos para la gestión de usuarios y órdenes en una empresa distribuidora de materiales. Se implementan funcionalidades para administrar el ciclo de vida de las órdenes, la gestión de usuarios con roles asignados y la subida de evidencia fotográfica.
 
 ## Requisitos Previos
 - PHP >= 7.4
@@ -12,34 +12,31 @@ Este proyecto es una aplicación web desarrollada con Laravel 8. Permite gestion
 ## Funcionalidades
 
 ### Usuarios
-- Listado de usuarios registrados (activos e inactivos).
-- Creación de usuarios con la opción de asignar roles.
-- Edición de datos y cambio de estado de los usuarios.
-- Desactivación de usuarios.
+- **Listado de Usuarios**: Permite visualizar todos los usuarios registrados.
+- **Creación de Usuarios**: Opción para crear usuarios y asignar roles según el departamento.
+- **Edición de Usuarios**: Actualización de información personal y rol asignado.
+- **Eliminación de Usuarios**: Desactivación de usuarios de manera lógica.
 
 ### Órdenes
-- Listado de todas las órdenes, ordenadas de la más reciente a la más antigua.
-- Creación de nuevas órdenes con la posibilidad de subir evidencia.
-- Actualización de las órdenes y su estado.
-- Eliminación lógica de órdenes.
-- Listado de órdenes archivadas con opción de restauración.
+- **Gestión Completa del Ciclo de Vida de Órdenes**:
+  - Creación de órdenes con datos como número de factura, datos fiscales, dirección de entrega y notas.
+  - Cambios de estado de las órdenes: `Ordered`, `In Process`, `In Route`, y `Delivered`.
+- **Evidencia Fotográfica**:
+  - Subida de fotos durante el estado `In Route` (foto del material cargado) y `Delivered` (foto del material entregado).
+- **Listados**:
+  - Listado general de todas las órdenes, ordenadas por fecha.
+  - Listado de órdenes archivadas con posibilidad de restauración.
+- **Búsqueda de Órdenes**:
+  - Filtrado por número de factura, cliente, fecha o estado.
 
-### Búsqueda de Órdenes
-- Formulario de búsqueda por número de factura.
-- Muestra evidencia de la orden entregada o el proceso en curso.
+### Roles y Permisos
+- **Roles Definidos**:
+  - `Sales`: Creación de órdenes.
+  - `Warehouse`: Gestión de inventario y preparación de pedidos.
+  - `Route`: Subida de evidencia fotográfica.
+  - `Admin`: Gestión de usuarios y supervisión general.
 
-## Rutas Principales
+### Seguridad y Flujo
+- Autenticación requerida para acceder al dashboard administrativo.
+- Eliminación lógica de órdenes para mantener un historial completo.
 
-```php
-Route::get('/', [OrderController::class, 'home'])->name('home');
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->name('dashboard');
-Route::post('/logout', function () {
-    return redirect('/');
-})->name('logout');
-
-Route::resource('users', UserController::class);
-Route::resource('orders', OrderController::class)->except(['show']);
-Route::get('orders/archived', [OrderController::class, 'archived'])->name('orders.archived');
-Route::post('orders/{id}/restore', [OrderController::class, 'restore'])->name('orders.restore');

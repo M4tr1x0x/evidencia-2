@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,10 +10,14 @@ class Order extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'invoice_number', 'status', 'user_id', 'process_name', 'process_date', 'evidence_photo'
+        'invoice_number',
+        'customer_name',
+        'customer_number',
+        'fiscal_data',
+        'delivery_address',
+        'notes',
+        'status',
+        'order_date',
     ];
-
-    public function user() {
-        return $this->belongsTo(User::class);
-    }
 }
+

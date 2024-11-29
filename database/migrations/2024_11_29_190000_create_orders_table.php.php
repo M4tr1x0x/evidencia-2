@@ -14,15 +14,16 @@ class CreateOrdersTable extends Migration
     public function up() {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
             $table->string('invoice_number')->unique();
-            $table->enum('status', ['in_process', 'on_route', 'delivered', 'archived']);
-            $table->string('process_name')->nullable();
-            $table->timestamp('process_date')->nullable();
-            $table->string('evidence_photo')->nullable();
-            $table->softDeletes(); 
+            $table->string('customer_name');
+            $table->string('customer_number');
+            $table->string('fiscal_data');
+            $table->string('delivery_address');
+            $table->text('notes')->nullable();
+            $table->string('status');
+            $table->timestamp('order_date');
+            $table->softDeletes(); // Esto incluye automáticamente `deleted_at`
             $table->timestamps();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
     

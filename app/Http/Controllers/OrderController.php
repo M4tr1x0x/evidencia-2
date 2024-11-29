@@ -3,87 +3,127 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function index() {
-        $orders = Order::orderBy('created_at', 'desc')->get();
+    // Mostrar todas las órdenes (para Warehouse)
+    public function index()
+    {
+        $orders = Order::whereNull('deleted_at')->orderBy('created_at', 'desc')->get();
         return view('orders.index', compact('orders'));
     }
-    public function home(Request $request) {
-        $order = null;
     
-        if ($request->filled('invoice_number')) {
-            $order = Order::where('invoice_number', $request->invoice_number)->first();
-        }
-    
-        return view('home', compact('order'));
-    }
-    
-    public function create() {
-        $users = User::all();
-        return view('orders.create', compact('users'));
+    // Crear una nueva orden (para Sales)
+    public function create()
+    {
+        return view('orders.create');
     }
 
-    public function store(Request $request) {
+    // Guardar una nueva orden (para Sales)
+    public function store(Request $request)
+    {
         $request->validate([
             'invoice_number' => 'required|unique:orders,invoice_number',
-            'user_id' => 'required|exists:users,id',
-            'status' => 'required|in:in_process,on_route,delivered',
-            'evidence_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'customer_name' => 'required|string',
+            'customer_number' => 'required|unique:orders,customer_number',
+            'fiscal_data' => 'required|string',
+            'delivery_address' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        Order::create([
+            'invoice_number' => $request->invoice_number,
+            'customer_name' => $request->customer_name,
+            'customer_number' => $request->customer_number,
+            'fiscal_data' => $request->fiscal_data,
+            'delivery_address' => $request->delivery_address,
+            'notes' => $request->notes,
+            'status' => 'Ordered',
+            'order_date' => now(),
+        ]);
+
+        return redirect()->route('orders.index')->with('success', 'Orden creada exitosamente.');
+    }
+
+    // Cambiar el estado a "In Process" (para Warehouse)
+    public function process($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->update(['status' => 'In Process']);
+
+        return redirect()->route('orders.index')->with('success', 'Estado cambiado a "En Proceso".');
+    }
+
+    // Subir foto de la carga o entrega (para Route)
+    public function uploadPhoto(Request $request, $id)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
     
-        try {
-            $data = $request->all();
+        $order = Order::findOrFail($id);
     
-            if ($request->hasFile('evidence_photo')) {
-                $data['evidence_photo'] = $request->file('evidence_photo')->store('evidencias', 'public');
-            }
-    
-            Order::create($data);
-    
-            return redirect()->route('orders.index')->with('success', 'Orden creada correctamente.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Hubo un problema al crear la orden: ' . $e->getMessage());
+        if ($order->status === 'In Route') {
+            $photoPath = $request->file('photo')->store('evidences', 'public');
+            $order->update(['route_photo' => $photoPath]);
+            return back()->with('success', 'Foto de la carga subida correctamente.');
+        } elseif ($order->status === 'Delivered') {
+            $photoPath = $request->file('photo')->store('evidences', 'public');
+            $order->update(['delivery_photo' => $photoPath]);
+            return back()->with('success', 'Foto de la entrega subida correctamente.');
         }
+    
+        return back()->with('error', 'No se puede subir la foto en este estado.');
     }
     
-    
 
-    public function edit(Order $order) {
-        $users = User::all();
-        return view('orders.edit', compact('order', 'users'));
+    // Restaurar una orden eliminada (para todos los roles)
+    public function restore($id)
+    {
+        $order = Order::withTrashed()->findOrFail($id);
+        $order->restore();
+
+        return redirect()->route('orders.archived')->with('success', 'Orden restaurada correctamente.');
+    }
+    public function update(Request $request, $id)
+    {
+        // Validar los datos enviados
+        $request->validate([
+            'status' => 'required|string|in:Ordered,In Process,In Route,Delivered',
+        ]);
+
+        // Encontrar la orden por ID
+        $order = Order::findOrFail($id);
+
+        // Actualizar los datos de la orden
+        $order->update([
+            'status' => $request->status,
+        ]);
+
+        return redirect()->route('orders.index')->with('success', 'Orden actualizada exitosamente.');
     }
 
-    public function update(Request $request, Order $order) {
-        $order->update($request->all());
-        return redirect()->route('orders.index');
-    }
 
-    public function destroy(Order $order) {
-        $order->delete();
-        return redirect()->route('orders.index');
-    }
-
-    public function archived() {
-        $orders = Order::onlyTrashed()->get();
+    // Ver órdenes archivadas (para todos los roles)
+    public function archived()
+    {
+        $orders = Order::onlyTrashed()->get(); // Solo las órdenes eliminadas
         return view('orders.archived', compact('orders'));
+    }    
+
+    public function edit($id)
+    {
+        $order = Order::findOrFail($id); // Encuentra la orden por ID o lanza un error 404
+        return view('orders.edit', compact('order')); // Retorna la vista de edición con la orden
     }
 
-    public function restore($id) {
-        Order::withTrashed()->find($id)->restore();
-        return redirect()->route('orders.archived');
+    public function destroy($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->delete(); // Esto manejará automáticamente el campo 'deleted_at'
+        return redirect()->route('orders.index')->with('success', 'Orden eliminada exitosamente.');
     }
 
-    public function search(Request $request) {
-        $order = null;
-
-        if ($request->has('invoice_number')) {
-            $order = Order::where('invoice_number', $request->invoice_number)->first();
-        }
-
-        return view('home', compact('order'));
-    }
 }
+

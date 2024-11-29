@@ -11,9 +11,10 @@ class CreateRolesTable extends Migration
      *
      * @return void
      */
-    public function up() {
+    public function up()
+    {
         Schema::create('roles', function (Blueprint $table) {
-            $table->id(); // Este es un BIGINT por defecto en Laravel.
+            $table->id();
             $table->string('name')->unique();
             $table->timestamps();
         });
